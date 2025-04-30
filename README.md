@@ -19,7 +19,7 @@ A cross-platform desktop application for generating personalized weekly workout 
 - GitHub Actions (CI/CD)
 
 ## Project Structure
-
+```text
 personal-workout-planner/ 
   ├── backend/ 
   │ ├── main.py 
@@ -32,6 +32,7 @@ personal-workout-planner/
   │ └── ci.yml 
   ├── Dockerfile 
   └── README.md
+```
 ## Getting Started
 
 ### Backend
