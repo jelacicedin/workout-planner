@@ -1,13 +1,25 @@
 const rules = require('./webpack.rules');
 
-rules.push({
-  test: /\.css$/,
-  use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
-});
+rules.push(
+  {
+    test: /\.tsx?$/,
+    exclude: /node_modules/,
+    use: {
+      loader: 'ts-loader',
+    },
+  },
+  {
+    test: /\.css$/,
+    use: ['style-loader', 'css-loader'],
+  }
+);
 
 module.exports = {
-  // Put your normal webpack config below here
+  entry: './src/renderer.tsx',
   module: {
     rules,
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js'],
   },
 };
