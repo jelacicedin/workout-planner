@@ -20,3 +20,15 @@ A cross-platform desktop application for generating personalized weekly workout 
 
 ## Project Structure
 
+personal-workout-planner/ 
+  ├── backend/ 
+  │ ├── main.py 
+  │ ├── models.py 
+  │ ├── database.py 
+  │ └── requirements.txt 
+  ├── workout-planner/ (Electron frontend) 
+  │ └── [Electron Forge scaffolded files] 
+  ├── .github/workflows/ 
+  │ └── ci.yml 
+  ├── Dockerfile 
+  └── README.md
