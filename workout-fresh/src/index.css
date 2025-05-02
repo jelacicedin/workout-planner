@@ -13,3 +13,16 @@ body {
 .input {
   @apply block w-full px-4 py-2 border border-gray-300 rounded-md;
 }
+
+/* Ensure calendar uses Tailwind-safe scope */
+.react-calendar {
+  @apply bg-white rounded-lg shadow p-2;
+}
+
+.react-calendar__tile--active {
+  @apply bg-blue-500 text-white;
+}
+
+.react-calendar__tile--now {
+  @apply bg-gray-200;
+}

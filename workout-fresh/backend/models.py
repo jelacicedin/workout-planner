@@ -64,9 +64,11 @@ class WorkoutSession(Base):
     user_id = Column(Integer, ForeignKey("user_profiles.id"), nullable=False)
     date = Column(Date, nullable=False)
     source = Column(String, default="manual")
+    workout_day_id = Column(Integer, ForeignKey("workout_days.id"))
 
     user = relationship("UserProfile", back_populates="sessions")
     sets = relationship("WorkoutSet", back_populates="session")
+    day = relationship("WorkoutDay", back_populates="session", uselist=False)
 
 
 class WorkoutSet(Base):
@@ -95,3 +97,12 @@ class WorkoutSuggestion(Base):
     explanation_text = Column(Text)
 
     user = relationship("UserProfile", back_populates="suggestions")
+
+class WorkoutDay(Base):
+    __tablename__ = "workout_days"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user_profiles.id"), nullable=False)
+    date = Column(Date, nullable=False, index=True)
+
+    session = relationship("WorkoutSession", back_populates="day", uselist=False)

@@ -9,7 +9,8 @@ from models import *
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.exception_handlers import request_validation_exception_handler
-
+from datetime import date
+from typing import List, Optional
 
 app = FastAPI()
 
@@ -33,6 +34,7 @@ def get_db():
 
 # SCHEMAS
 
+
 class UserProfileCreate(BaseModel):
     name: str
     height_cm: float
@@ -44,6 +46,7 @@ class UserProfileCreate(BaseModel):
     experience: str
     constraints: str
     equipment: str
+
 
 class BodyStatEntryCreate(BaseModel):
     user_id: int
@@ -74,20 +77,45 @@ class SuggestionCreate(BaseModel):
     explanation_text: str
 
 
+class WorkoutDayCreate(BaseModel):
+    user_id: int
+    date: date
+
+
+class WorkoutSchema(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
+class WorkoutSetSchema(BaseModel):
+    workout: WorkoutSchema
+    reps: Optional[int]
+    weight_kg: Optional[float]
+
+    class Config:
+        orm_mode = True
+
+
 # ROUTES
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     print(">>> 422 Validation Error:", exc.errors())
     return await request_validation_exception_handler(request, exc)
 
+
 @app.post("/users/")
-async def create_user(profile: UserProfileCreate, request: Request, db: Session = Depends(get_db)):
-    
+async def create_user(
+    profile: UserProfileCreate, request: Request, db: Session = Depends(get_db)
+):
+
     body = await request.json()
     print(">>> Raw request body:", body)
     print(">>> Parsed Pydantic model:", profile.dict())
-    
+
     db_profile = UserProfile(**profile.dict())
     db.add(db_profile)
     db.commit()
@@ -178,3 +206,32 @@ def get_suggestions(user_id: int, db: Session = Depends(get_db)):
 @app.get("/ping")
 def ping():
     return {"message": "pong"}
+
+
+@app.post("/workout-days/", response_model=WorkoutDayCreate)
+def create_workout_day(day: WorkoutDayCreate, db: Session = Depends(get_db)):
+    entry = WorkoutDay(**day.dict())
+    db.add(entry)
+    db.commit()
+    return entry
+
+
+@app.get("/workout-days/", response_model=List[WorkoutDayCreate])
+def get_workout_days(user_id: int, db: Session = Depends(get_db)):
+    return db.query(WorkoutDay).filter(WorkoutDay.user_id == user_id).all()
+
+
+@app.get("/workout-sets/{user_id}/{date}", response_model=List[WorkoutSetSchema])
+def get_workout_sets(user_id: int, date: str, db: Session = Depends(get_db)):
+    session = (
+        db.query(WorkoutSession)
+        .filter(
+            WorkoutSession.user_id == user_id, WorkoutSession.date == date
+        )
+        .first()
+    )
+
+    if not session:
+        return []
+
+    return session.sets
