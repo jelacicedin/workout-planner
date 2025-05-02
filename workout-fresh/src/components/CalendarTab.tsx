@@ -1,107 +1,101 @@
-import React, { useEffect, useState } from "react";
+// CalendarTab.tsx
+import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import axios from "axios";
-
-interface WorkoutDay {
-  id: number;
-  user_id: number;
-  date: string;
-}
+import SessionList from "./SessionList";
+import SessionEditor from "./SessionEditor";
 
 interface WorkoutSet {
-  workout: { name: string };
+  id: number;
+  set_number: number;
   reps?: number;
+  duration_seconds?: number;
   weight_kg?: number;
+}
+
+interface Workout {
+  id: number;
+  name: string;
+  workout_type: string;
+  input_mode: string;
+  description?: string;
+  notes?: string;
+}
+
+interface WorkoutWithSets {
+  workout: Workout;
+  sets: WorkoutSet[];
+}
+
+export interface WorkoutSession {
+  id: number;
+  name: string;
+  workouts: WorkoutWithSets[];
 }
 
 const userId = 1;
 
 const CalendarTab: React.FC = () => {
-  const [value, setValue] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [workoutDates, setWorkoutDates] = useState<string[]>([]);
-  const [workoutSets, setWorkoutSets] = useState<WorkoutSet[]>([]);
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
 
   const fetchWorkoutDays = async () => {
+    const res = await axios.get<{ date: string }[]>(`https://localhost:8000/workout-days/?user_id=${userId}`);
+    setWorkoutDates(res.data.map(d => d.date));
+  };
+
+  const fetchSessions = async (date: Date) => {
     try {
-      const res = await axios.get<WorkoutDay[]>(
-        `https://localhost:8000/workout-days/?user_id=${userId}`
-      );
-      const dates = res.data.map((d) => d.date);
-      setWorkoutDates(dates);
-    } catch (err) {
-      console.error("Error fetching workout days", err);
-    }
-  };
-
-  const fetchWorkoutSets = async (selectedDate: Date) => {
-    const isoDate = selectedDate.toISOString().split("T")[0];
-    try {
-      const res = await axios.get<WorkoutSet[]>(
-        `https://localhost:8000/workout-sets/${userId}/${isoDate}`
-      );
-      setWorkoutSets(res.data);
-    } catch (err) {
-      console.error("Failed to fetch workouts", err);
-      setWorkoutSets([]);
-    }
-  };
-
-  const handleDayClick = async (date: Date) => {
-    const isoDate = date.toISOString().split("T")[0];
-    if (!workoutDates.includes(isoDate)) {
-      try {
-        await axios.post("https://localhost:8000/workout-days/", {
-          user_id: userId,
-          date: isoDate,
-        });
-        setWorkoutDates([...workoutDates, isoDate]);
-      } catch (err) {
-        console.error("Error creating workout day", err);
-      }
-    }
-    setValue(date);
-    await fetchWorkoutSets(date);
-  };
-
-  const tileClassName = ({ date, view }: any) => {
-    if (view === "month") {
       const iso = date.toISOString().split("T")[0];
-      if (workoutDates.includes(iso)) {
-        return "bg-green-200";
-      }
+      const res = await axios.get<WorkoutSession[]>(`https://localhost:8000/session/full/${userId}/${iso}`);
+      setSessions(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+      setSessions([]);
     }
-    return null;
+    setSelectedSession(null);
+  };
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    fetchSessions(date);
   };
 
   useEffect(() => {
     fetchWorkoutDays();
-    fetchWorkoutSets(value);
   }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Workout Calendar</h2>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Workout Calendar</h1>
       <Calendar
         onClickDay={handleDayClick}
-        value={value}
-        tileClassName={tileClassName}
+        value={selectedDate ?? new Date()}
+        tileClassName={({ date }) => {
+          const iso = date.toISOString().split("T")[0];
+          return workoutDates.includes(iso) ? "bg-green-200" : "";
+        }}
       />
-      <div className="mt-6">
-        <h3 className="font-bold">Workouts for {value.toDateString()}:</h3>
-        {workoutSets.length === 0 ? (
-          <p>No workouts logged.</p>
-        ) : (
-          <ul className="list-disc pl-5 mt-2">
-            {workoutSets.map((set, idx) => (
-              <li key={idx}>
-                {set.workout.name}: {set.reps ?? ''} reps{" "}
-                {set.weight_kg ? `@ ${set.weight_kg}kg` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+
+      {selectedDate && !selectedSession && (
+        <SessionList
+          date={selectedDate}
+          sessions={sessions}
+          onSelectSession={setSelectedSession}
+          onRefresh={() => fetchSessions(selectedDate)}
+        />
+      )}
+
+      {selectedSession && (
+        <SessionEditor
+          session={selectedSession}
+          onBack={() => setSelectedSession(null)}
+          onUpdate={() => selectedDate && fetchSessions(selectedDate)}
+        />
+      )}
     </div>
   );
 };

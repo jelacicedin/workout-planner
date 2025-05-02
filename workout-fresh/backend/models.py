@@ -12,6 +12,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
+from sqlalchemy import Enum as SQLAEnum
+import enum
+
 
 
 class UserProfile(Base):
@@ -22,7 +25,6 @@ class UserProfile(Base):
     height_cm = Column(Float)
     weight_kg = Column(Float)
     body_fat_percent = Column(Float)
-    photo_path = Column(String, nullable=True)
     sex = Column(String)
     goal = Column(String)
     experience = Column(String)
@@ -46,21 +48,32 @@ class BodyStatEntry(Base):
 
     user = relationship("UserProfile", back_populates="body_stats")
 
+class WorkoutType(str, enum.Enum):
+    bodyweight = "bodyweight"
+    weighted = "weighted"
+    none = "none"
 
+class InputMode(str, enum.Enum):
+    reps = "reps"
+    time = "time"
+    
 class Workout(Base):
     __tablename__ = "workouts"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    is_bodyweight = Column(Boolean, default=False)
-
+    workout_type = Column(SQLAEnum(WorkoutType), nullable=False)
+    input_mode = Column(SQLAEnum(InputMode), nullable=False)
+    description = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    
     sets = relationship("WorkoutSet", back_populates="workout")
-
 
 class WorkoutSession(Base):
     __tablename__ = "workout_sessions"
 
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("user_profiles.id"), nullable=False)
     date = Column(Date, nullable=False)
     source = Column(String, default="manual")

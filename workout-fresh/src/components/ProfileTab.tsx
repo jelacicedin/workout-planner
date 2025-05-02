@@ -12,7 +12,6 @@ type UserProfile = {
   experience?: string;
   constraints?: string;
   equipment?: string;
-  photo_path?: string;
 };
 
 const defaultProfile: UserProfile = {
