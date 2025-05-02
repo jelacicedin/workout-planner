@@ -4,6 +4,7 @@ import {
   installExtension,
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
+import { session } from "electron";
 
 console.log(">>>>> main.ts executing");
 
@@ -18,6 +19,8 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
+      // contextIsolation: false,     // allow same context
+      webSecurity: false, // ✅ disables CSP enforcement
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
@@ -42,6 +45,18 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  session.defaultSession.setCertificateVerifyProc((_, callback) => callback(0));
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        "Content-Security-Policy": [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; connect-src 'self' https://localhost:8000",
+        ],
+      },
+    });
+  });
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the

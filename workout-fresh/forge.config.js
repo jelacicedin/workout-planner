@@ -18,6 +18,8 @@ module.exports = {
             preload: {
               js: './src/preload.ts',
             },
+            csp: "default-src 'self' 'unsafe-inline' data:; connect-src 'self' https://localhost:8000;",
+
           },
         ],
       },
