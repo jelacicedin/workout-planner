@@ -7,9 +7,9 @@ module.exports = {
   makers: [],
   plugins: [
     new WebpackPlugin({
-      mainConfig: './webpack.main.config.js',
+      mainConfig: path.resolve(__dirname, 'webpack.main.config.js'),
       renderer: {
-        config: './webpack.renderer.config.js',
+        config: path.resolve(__dirname, 'webpack.renderer.config.js'),
         entryPoints: [
           {
             name: 'main_window',
