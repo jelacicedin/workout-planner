@@ -48,6 +48,7 @@ export const ProfileTab = () => {
   };
 
   const handleSubmit = () => {
+    console.log("Submitting user profile:", profile);
     axios.post("https://localhost:8000/users/", profile).then((res) => {
       setProfile(res.data);
     });

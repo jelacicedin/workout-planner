@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -6,6 +8,7 @@ from database import SessionLocal, engine
 from models import *
 from pydantic import BaseModel
 from typing import List, Optional
+from fastapi.exception_handlers import request_validation_exception_handler
 
 
 app = FastAPI()
@@ -30,19 +33,17 @@ def get_db():
 
 # SCHEMAS
 
-
 class UserProfileCreate(BaseModel):
     name: str
-    height_cm: Optional[float]
-    weight_kg: Optional[float]
-    body_fat_percent: Optional[float]
-    sex: Optional[str]
-    goal: Optional[str]
-    experience: Optional[str]
-    constraints: Optional[str]
-    equipment: Optional[str]
-    photo_path: Optional[str]
-
+    height_cm: float
+    weight_kg: float
+    body_fat_percent: float
+    photo_path: Optional[str] = None
+    sex: str
+    goal: str
+    experience: str
+    constraints: str
+    equipment: str
 
 class BodyStatEntryCreate(BaseModel):
     user_id: int
@@ -75,14 +76,23 @@ class SuggestionCreate(BaseModel):
 
 # ROUTES
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(">>> 422 Validation Error:", exc.errors())
+    return await request_validation_exception_handler(request, exc)
 
 @app.post("/users/")
-def create_user(profile: UserProfileCreate, db: Session = Depends(get_db)):
-    user = UserProfile(**profile.dict())
-    db.add(user)
+async def create_user(profile: UserProfileCreate, request: Request, db: Session = Depends(get_db)):
+    
+    body = await request.json()
+    print(">>> Raw request body:", body)
+    print(">>> Parsed Pydantic model:", profile.dict())
+    
+    db_profile = UserProfile(**profile.dict())
+    db.add(db_profile)
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(db_profile)
+    return db_profile
 
 
 @app.get("/users/{user_id}")

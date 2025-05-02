@@ -19,8 +19,6 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      // contextIsolation: false,     // allow same context
-      webSecurity: false, // ✅ disables CSP enforcement
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
